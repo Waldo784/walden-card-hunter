@@ -223,15 +223,15 @@ def main():
         priority = int(row.get("priority", 3))
         max_price = float(row.get("max_price", 999999))
 
-    comp = comps.get(query)
+            comp = comps.get(query)
 
-    if not comp:
-    print(f"No comp found for query: {query} — using default estimate")
-    comp = {
-        "market_value": max_price,
-        "max_bid": max_price * 0.65,
-        "notes": "No manual comp yet — verify sold comps before buying."
-        }
+        if not comp:
+            print(f"No comp found for query: {query} — using default estimate")
+            comp = {
+                "market_value": max_price,
+                "max_bid": max_price * 0.65,
+                "notes": "No manual comp yet — verify sold comps before buying."
+            }
 
         market_value = comp["market_value"]
         max_bid = comp["max_bid"]
