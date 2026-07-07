@@ -192,17 +192,24 @@ def send_telegram(message):
     r.raise_for_status()
 
 
-def build_alert(hit):
+def build_grouped_alert(hit):
     discount = discount_percent(hit["price"], hit["market_value"])
     score = hit["walden_score"]
     rec = recommendation(score, hit["price"], hit["max_bid"])
 
+    matched_lines = []
+    for match in hit["matches"]:
+        matched_lines.append(f"- {match['card_key']} | {match['query']}")
+
+    matched_text = "\n".join(matched_lines[:10])
+    if len(matched_lines) > 10:
+        matched_text += f"\n...and {len(matched_lines) - 10} more matches"
+
     return (
         f"🔥 WALDEN CARD HUNTER\n\n"
         f"{rec}\n"
-        f"Walden Score: {score}/100\n\n"
-        f"Card Key: {hit['card_key']}\n"
-        f"Query: {hit['query']}\n"
+        f"Walden Score: {score}/100\n"
+        f"Matched Searches: {len(hit['matches'])}\n\n"
         f"Title: {hit['title']}\n\n"
         f"Current Price: ${hit['price']:.2f}\n"
         f"Estimated Market Value: ${hit['market_value']:.2f}\n"
@@ -210,11 +217,23 @@ def build_alert(hit):
         f"Suggested Max Bid: ${hit['max_bid']:.2f}\n"
         f"Buying Option: {hit['buying_option']}\n"
         f"Priority: {hit['priority']}/5\n\n"
+        f"Best Card Key: {hit['card_key']}\n"
         f"Comp Source: {hit['source']}\n"
         f"Last Checked: {hit['last_checked']}\n"
         f"Comp Notes: {hit['notes']}\n\n"
+        f"Matched:\n{matched_text}\n\n"
         f"{hit['url']}"
     )
+
+
+def default_comp(max_price):
+    return {
+        "market_value": max_price,
+        "max_bid": max_price * 0.65,
+        "source": "default",
+        "last_checked": "",
+        "notes": "No verified comp yet — check sold comps manually before buying.",
+    }
 
 
 def main():
@@ -224,7 +243,8 @@ def main():
     new_seen = set(seen)
 
     token = get_ebay_token()
-    hits = []
+
+    grouped_hits = {}
 
     for row in watchlist:
         card_key = row.get("card_key", "").strip()
@@ -233,16 +253,9 @@ def main():
         max_price = float(row.get("max_price", 999999))
 
         comp = comps.get(card_key)
-
         if not comp:
             print(f"No comp found for card_key: {card_key} — using default estimate")
-            comp = {
-                "market_value": max_price,
-                "max_bid": max_price * 0.65,
-                "source": "default",
-                "last_checked": "",
-                "notes": "No verified comp yet — check sold comps manually before buying.",
-            }
+            comp = default_comp(max_price)
 
         market_value = comp["market_value"]
         max_bid = comp["max_bid"]
@@ -263,8 +276,7 @@ def main():
             if not key:
                 continue
 
-            unique_seen_key = f"{key}|{card_key}"
-            if unique_seen_key in seen:
+            if key in seen:
                 continue
 
             title = item.get("title", "")
@@ -280,25 +292,53 @@ def main():
 
             score = walden_score(price, market_value, max_bid, priority)
 
-            hits.append({
-                "key": unique_seen_key,
+            match_info = {
                 "card_key": card_key,
                 "query": query,
-                "title": title,
-                "price": price,
+                "priority": priority,
                 "market_value": market_value,
                 "max_bid": max_bid,
                 "source": source,
                 "last_checked": last_checked,
                 "notes": notes,
-                "priority": priority,
-                "buying_option": buying_option(item),
-                "url": item.get("itemWebUrl", ""),
                 "walden_score": score,
-            })
+            }
 
-            new_seen.add(unique_seen_key)
+            if key not in grouped_hits:
+                grouped_hits[key] = {
+                    "key": key,
+                    "title": title,
+                    "price": price,
+                    "buying_option": buying_option(item),
+                    "url": item.get("itemWebUrl", ""),
+                    "matches": [match_info],
+                    "card_key": card_key,
+                    "market_value": market_value,
+                    "max_bid": max_bid,
+                    "source": source,
+                    "last_checked": last_checked,
+                    "notes": notes,
+                    "priority": priority,
+                    "walden_score": score,
+                }
+            else:
+                grouped_hits[key]["matches"].append(match_info)
 
+                if score > grouped_hits[key]["walden_score"]:
+                    grouped_hits[key].update({
+                        "card_key": card_key,
+                        "market_value": market_value,
+                        "max_bid": max_bid,
+                        "source": source,
+                        "last_checked": last_checked,
+                        "notes": notes,
+                        "priority": priority,
+                        "walden_score": score,
+                    })
+
+            new_seen.add(key)
+
+    hits = list(grouped_hits.values())
     hits.sort(key=lambda h: h["walden_score"], reverse=True)
 
     if not hits:
@@ -308,11 +348,11 @@ def main():
 
     sent = 0
     for hit in hits[:MAX_ALERTS_PER_RUN]:
-        send_telegram(build_alert(hit))
+        send_telegram(build_grouped_alert(hit))
         sent += 1
 
     save_seen(new_seen)
-    print(f"Sent {sent} alerts.")
+    print(f"Sent {sent} grouped alerts.")
 
 
 if __name__ == "__main__":
