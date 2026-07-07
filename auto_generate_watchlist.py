@@ -13,7 +13,6 @@ def load_csv(path):
 def main():
     players = load_csv(PLAYERS_FILE)
     insert_sets = load_csv(SETS_FILE)
-
     rows = []
 
     for player in players:
@@ -24,24 +23,20 @@ def main():
             set_name = insert_set["set_name"].strip()
             set_priority = int(insert_set["priority"])
             max_price = float(insert_set["max_price"])
-
             priority = max(player_priority, set_priority)
-
             rows.append({
                 "query": f"{player_name} {set_name}",
                 "max_price": int(max_price),
                 "priority": priority,
             })
 
-    extra_queries = [
+    rows.extend([
         {"query": "1990s basketball insert lot", "max_price": 500, "priority": 4},
         {"query": "90s basketball insert lot", "max_price": 500, "priority": 4},
         {"query": "rare basketball insert lot", "max_price": 750, "priority": 4},
         {"query": "SkyBox basketball insert lot", "max_price": 500, "priority": 4},
         {"query": "Fleer basketball insert lot", "max_price": 500, "priority": 3},
-    ]
-
-    rows.extend(extra_queries)
+    ])
 
     with open(OUTPUT_FILE, "w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=["query", "max_price", "priority"])
