@@ -1,4 +1,4 @@
-year,brand,insert_set,player,card_number,serial_number,priority,aliases
+card_key,year,brand,insert_set,player,card_number,serial_number,priority,aliases
 1997-98,Metal Universe,Precious Metal Gems,Scottie Pippen,,/100,5,"PMG;Precious Metal Gems;Metal PMG"
 1997-98,Metal Universe,Precious Metal Gems,Michael Jordan,,/100,5,"PMG;Precious Metal Gems;Metal PMG"
 1997-98,Metal Universe,Precious Metal Gems,Kobe Bryant,,/100,5,"PMG;Precious Metal Gems;Metal PMG"
