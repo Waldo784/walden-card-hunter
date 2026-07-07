@@ -6,6 +6,7 @@ import requests
 from pathlib import Path
 
 WATCHLIST_FILE = "watchlist.csv"
+COMPS_FILE = "comps_cache.csv"
 SEEN_FILE = "seen_items.json"
 
 RESULTS_PER_QUERY = 20
@@ -16,7 +17,6 @@ EBAY_CLIENT_SECRET = os.environ["EBAY_CLIENT_SECRET"]
 TELEGRAM_BOT_TOKEN = os.environ["TELEGRAM_BOT_TOKEN"]
 TELEGRAM_CHAT_ID = os.environ["TELEGRAM_CHAT_ID"]
 
-
 BAD_WORDS = [
     "reprint", "custom", "digital", "proxy", "facsimile",
     "poster", "photo", "photograph", "jersey", "shirt",
@@ -25,9 +25,32 @@ BAD_WORDS = [
 ]
 
 
-def load_watchlist():
-    with open(WATCHLIST_FILE, newline="", encoding="utf-8") as f:
+def normalize(text):
+    return " ".join(str(text).lower().split())
+
+
+def load_csv(path):
+    with open(path, newline="", encoding="utf-8") as f:
         return list(csv.DictReader(f))
+
+
+def load_watchlist():
+    return load_csv(WATCHLIST_FILE)
+
+
+def load_comps():
+    comps = {}
+    if not Path(COMPS_FILE).exists():
+        return comps
+
+    for row in load_csv(COMPS_FILE):
+        query = row["query"].strip()
+        comps[query] = {
+            "market_value": float(row["market_value"]),
+            "max_bid": float(row["max_bid"]),
+            "notes": row.get("notes", "").strip(),
+        }
+    return comps
 
 
 def load_seen():
@@ -45,10 +68,6 @@ def save_seen(seen):
         json.dumps(sorted(seen), indent=2),
         encoding="utf-8"
     )
-
-
-def normalize(text):
-    return " ".join(text.lower().split())
 
 
 def is_junk(title):
@@ -115,6 +134,47 @@ def item_key(item):
     return item.get("itemId") or item.get("legacyItemId") or item.get("itemWebUrl")
 
 
+def buying_option(item):
+    options = item.get("buyingOptions", [])
+    return ", ".join(options) if options else "Unknown"
+
+
+def discount_percent(price, market_value):
+    if market_value <= 0:
+        return 0
+    return max(0, (market_value - price) / market_value)
+
+
+def walden_score(price, market_value, max_bid, priority):
+    if market_value <= 0:
+        return 50
+
+    discount = discount_percent(price, market_value)
+
+    score = 50
+    score += discount * 40
+
+    if price <= max_bid:
+        score += 10
+    else:
+        over = (price - max_bid) / max_bid if max_bid else 1
+        score -= min(20, over * 20)
+
+    score += (priority - 3) * 3
+
+    return max(0, min(100, round(score)))
+
+
+def recommendation(score, price, max_bid):
+    if score >= 90 and price <= max_bid:
+        return "🔥 STRONG BUY"
+    if score >= 80 and price <= max_bid:
+        return "✅ BUY / WATCH CLOSELY"
+    if score >= 70:
+        return "👀 WATCHLIST"
+    return "⚠️ PASS UNLESS PHOTOS ARE EXCELLENT"
+
+
 def send_telegram(message):
     url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
     payload = {
@@ -128,20 +188,30 @@ def send_telegram(message):
 
 
 def build_alert(hit):
+    discount = discount_percent(hit["price"], hit["market_value"])
+    score = hit["walden_score"]
+    rec = recommendation(score, hit["price"], hit["max_bid"])
+
     return (
         f"🔥 WALDEN CARD HUNTER\n\n"
+        f"{rec}\n"
+        f"Walden Score: {score}/100\n\n"
         f"Query: {hit['query']}\n"
         f"Title: {hit['title']}\n\n"
-        f"Price: ${hit['price']:.2f}\n"
-        f"Max Watch Price: ${hit['max_price']:.2f}\n"
-        f"Priority: {hit['priority']}/5\n"
-        f"Buying Option: {hit['buying_option']}\n\n"
+        f"Current Price: ${hit['price']:.2f}\n"
+        f"Estimated Market Value: ${hit['market_value']:.2f}\n"
+        f"Discount: {discount:.0%} under market\n"
+        f"Suggested Max Bid: ${hit['max_bid']:.2f}\n"
+        f"Buying Option: {hit['buying_option']}\n"
+        f"Priority: {hit['priority']}/5\n\n"
+        f"Comp Notes: {hit['notes']}\n\n"
         f"{hit['url']}"
     )
 
 
 def main():
     watchlist = load_watchlist()
+    comps = load_comps()
     seen = load_seen()
     new_seen = set(seen)
 
@@ -150,8 +220,17 @@ def main():
 
     for row in watchlist:
         query = row["query"].strip()
-        max_price = float(row["max_price"])
-        priority = int(row["priority"])
+        priority = int(row.get("priority", 3))
+        max_price = float(row.get("max_price", 999999))
+
+        comp = comps.get(query)
+        if not comp:
+            print(f"No comp found for query: {query}")
+            continue
+
+        market_value = comp["market_value"]
+        max_bid = comp["max_bid"]
+        notes = comp["notes"]
 
         print(f"Searching: {query}")
 
@@ -171,27 +250,31 @@ def main():
                 continue
 
             price = price_of(item)
-            if price is None or price > max_price:
+            if price is None:
                 continue
 
-            url = item.get("itemWebUrl", "")
-            buying_options = item.get("buyingOptions", [])
-            buying_option = ", ".join(buying_options)
+            if price > max_price:
+                continue
+
+            score = walden_score(price, market_value, max_bid, priority)
 
             hits.append({
                 "key": key,
                 "query": query,
                 "title": title,
                 "price": price,
-                "max_price": max_price,
+                "market_value": market_value,
+                "max_bid": max_bid,
+                "notes": notes,
                 "priority": priority,
-                "buying_option": buying_option,
-                "url": url,
+                "buying_option": buying_option(item),
+                "url": item.get("itemWebUrl", ""),
+                "walden_score": score,
             })
 
             new_seen.add(key)
 
-    hits.sort(key=lambda h: (h["priority"], -h["price"]), reverse=True)
+    hits.sort(key=lambda h: h["walden_score"], reverse=True)
 
     if not hits:
         send_telegram("Walden Card Hunter ran — no matching deals found.")
