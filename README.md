@@ -1,24 +1,21 @@
-# Walden Card Hunter
+# Walden Card Hunter v2
 
-Automated eBay scanner for 1990s basketball insert opportunities.
+Modular scanner for 1990s basketball inserts.
 
-## What it does
-
-- Generates search queries from `players.csv` + `insert_sets.csv`
-- Searches active eBay auction and fixed-price listings
-- Filters obvious junk
-- Uses `comps_cache.csv` when available
-- Uses a default estimate when no comp exists yet
-- Scores listings with a Walden Score
-- Sends Telegram alerts
+## Files
+- `scanner.py` - main scanner runner
+- `catalog_generate_watchlist.py` - creates `watchlist.csv` from `card_catalog.csv`
+- `comp_manager.py` - creates a missing comps report
+- `wch/` - modular app code
 
 ## GitHub Secrets Required
-
 - `EBAY_CLIENT_ID`
 - `EBAY_CLIENT_SECRET`
 - `TELEGRAM_BOT_TOKEN`
 - `TELEGRAM_CHAT_ID`
 
-## Manual Run
-
-GitHub → Actions → Walden Card Hunter → Run workflow
+## Workflow Modes
+- `scanner`
+- `test_sold_comps`
+- `test_sold_endpoint`
+- `comp_manager`

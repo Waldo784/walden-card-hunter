@@ -1,0 +1,60 @@
+name: Walden Card Hunter
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "What would you like to run?"
+        required: true
+        default: "scanner"
+        type: choice
+        options:
+          - scanner
+          - test_sold_comps
+          - test_sold_endpoint
+          - comp_manager
+  schedule:
+    - cron: "0 * * * *"
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Generate Watchlist
+        if: github.event.inputs.mode == '' || github.event.inputs.mode == 'scanner'
+        run: python catalog_generate_watchlist.py
+      - name: Run Scanner
+        if: github.event.inputs.mode == '' || github.event.inputs.mode == 'scanner'
+        run: python scanner.py
+        env:
+          EBAY_CLIENT_ID: ${{ secrets.EBAY_CLIENT_ID }}
+          EBAY_CLIENT_SECRET: ${{ secrets.EBAY_CLIENT_SECRET }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+      - name: Test Sold Comps
+        if: github.event.inputs.mode == 'test_sold_comps'
+        run: python test_sold_comps.py
+        env:
+          EBAY_CLIENT_ID: ${{ secrets.EBAY_CLIENT_ID }}
+          EBAY_CLIENT_SECRET: ${{ secrets.EBAY_CLIENT_SECRET }}
+      - name: Test Sold Endpoint
+        if: github.event.inputs.mode == 'test_sold_endpoint'
+        run: python test_sold_endpoint.py
+        env:
+          EBAY_CLIENT_ID: ${{ secrets.EBAY_CLIENT_ID }}
+          EBAY_CLIENT_SECRET: ${{ secrets.EBAY_CLIENT_SECRET }}
+      - name: Run Comp Manager
+        if: github.event.inputs.mode == 'comp_manager'
+        run: python comp_manager.py
+      - name: Upload Missing Comps Report
+        if: github.event.inputs.mode == 'comp_manager'
+        uses: actions/upload-artifact@v4
+        with:
+          name: missing-comps-report
+          path: missing_comps_report.csv
