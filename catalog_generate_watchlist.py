@@ -4,6 +4,12 @@ CATALOG_FILE = "card_catalog.csv"
 OUTPUT_FILE = "watchlist.csv"
 
 
+def safe_text(value):
+    if value is None:
+        return ""
+    return str(value).strip()
+
+
 def load_catalog():
     with open(CATALOG_FILE, newline="", encoding="utf-8") as f:
         return list(csv.DictReader(f))
@@ -14,13 +20,13 @@ def main():
     rows = []
 
     for card in catalog:
-        year = card.get("year", "").strip()
-        brand = card.get("brand", "").strip()
-        insert_set = card.get("insert_set", "").strip()
-        player = card.get("player", "").strip()
-        priority = card.get("priority", "5").strip() or "5"
+        year = safe_text(card.get("year"))
+        brand = safe_text(card.get("brand"))
+        insert_set = safe_text(card.get("insert_set"))
+        player = safe_text(card.get("player"))
+        priority = safe_text(card.get("priority")) or "5"
+        aliases = safe_text(card.get("aliases"))
 
-        aliases = card.get("aliases", "").strip()
         alias_terms = [a.strip() for a in aliases.split(";") if a.strip()]
 
         base_queries = [
