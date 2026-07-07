@@ -1,11 +1,11 @@
 card_key,year,brand,insert_set,player,card_number,serial_number,priority,aliases
-1997-98,Metal Universe,Precious Metal Gems,Scottie Pippen,,/100,5,"PMG;Precious Metal Gems;Metal PMG"
-1997-98,Metal Universe,Precious Metal Gems,Michael Jordan,,/100,5,"PMG;Precious Metal Gems;Metal PMG"
-1997-98,Metal Universe,Precious Metal Gems,Kobe Bryant,,/100,5,"PMG;Precious Metal Gems;Metal PMG"
-1998-99,SkyBox Premium,Soul of the Game,Scottie Pippen,,,
-1998-99,SkyBox Premium,That’s Jam,Scottie Pippen,,,
-1998-99,SkyBox Premium,Dunk N Go Nuts,Scottie Pippen,,,
-1996-97,Flair Showcase,Row 0,Scottie Pippen,,,
-1996-97,Flair Showcase,Row 1,Scottie Pippen,,,
-1996-97,Flair Showcase,Row 2,Scottie Pippen,,,
-1997-98,Metal Universe,Platinum Portraits,Scottie Pippen,,,
+pippen_1997_metal_pmg,1997-98,Metal Universe,Precious Metal Gems,Scottie Pippen,,/100,5,"PMG;Precious Metal Gems;Metal PMG"
+jordan_1997_metal_pmg,1997-98,Metal Universe,Precious Metal Gems,Michael Jordan,,/100,5,"PMG;Precious Metal Gems;Metal PMG"
+kobe_1997_metal_pmg,1997-98,Metal Universe,Precious Metal Gems,Kobe Bryant,,/100,5,"PMG;Precious Metal Gems;Metal PMG"
+pippen_1998_skybox_soul_of_the_game,1998-99,SkyBox Premium,Soul of the Game,Scottie Pippen,,,5,"Soul of the Game"
+pippen_1998_skybox_thats_jam,1998-99,SkyBox Premium,That’s Jam,Scottie Pippen,,,5,"That's Jam;Thats Jam"
+pippen_1998_skybox_dunk_n_go_nuts,1998-99,SkyBox Premium,Dunk N Go Nuts,Scottie Pippen,,,5,"Dunk N Go Nuts;Dunk'n Go Nuts"
+pippen_1996_flair_showcase_row_0,1996-97,Flair Showcase,Row 0,Scottie Pippen,,,5,"Row 0;Showcase"
+pippen_1996_flair_showcase_row_1,1996-97,Flair Showcase,Row 1,Scottie Pippen,,,5,"Row 1;Showcase"
+pippen_1996_flair_showcase_row_2,1996-97,Flair Showcase,Row 2,Scottie Pippen,,,5,"Row 2;Showcase"
+pippen_1997_metal_platinum_portraits,1997-98,Metal Universe,Platinum Portraits,Scottie Pippen,,,5,"Platinum Portraits"
