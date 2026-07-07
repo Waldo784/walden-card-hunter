@@ -2,6 +2,16 @@ name: Walden Card Hunter
 
 on:
   workflow_dispatch:
+    inputs:
+      mode:
+        description: "What would you like to run?"
+        required: true
+        default: "scanner"
+        type: choice
+        options:
+          - scanner
+          - test_sold_comps
+
   schedule:
     - cron: "0 * * * *"
 
@@ -16,13 +26,25 @@ jobs:
         with:
           python-version: "3.11"
 
-      - run: pip install -r requirements.txt
+      - name: Install dependencies
+        run: pip install -r requirements.txt
 
-      - run: python catalog_generate_watchlist.py
+      - name: Generate Watchlist
+        if: github.event.inputs.mode != 'test_sold_comps'
+        run: python catalog_generate_watchlist.py
 
-      - run: python scanner.py
+      - name: Run Scanner
+        if: github.event.inputs.mode == '' || github.event.inputs.mode == 'scanner'
+        run: python scanner.py
         env:
           EBAY_CLIENT_ID: ${{ secrets.EBAY_CLIENT_ID }}
           EBAY_CLIENT_SECRET: ${{ secrets.EBAY_CLIENT_SECRET }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+
+      - name: Test Sold Comps
+        if: github.event.inputs.mode == 'test_sold_comps'
+        run: python test_sold_comps.py
+        env:
+          EBAY_CLIENT_ID: ${{ secrets.EBAY_CLIENT_ID }}
+          EBAY_CLIENT_SECRET: ${{ secrets.EBAY_CLIENT_SECRET }}
