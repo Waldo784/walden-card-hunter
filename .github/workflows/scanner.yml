@@ -11,6 +11,7 @@ on:
         options:
           - scanner
           - test_sold_comps
+          - test_sold_endpoint
 
   schedule:
     - cron: "0 * * * *"
@@ -45,6 +46,13 @@ jobs:
       - name: Test Sold Comps
         if: github.event.inputs.mode == 'test_sold_comps'
         run: python test_sold_comps.py
+        env:
+          EBAY_CLIENT_ID: ${{ secrets.EBAY_CLIENT_ID }}
+          EBAY_CLIENT_SECRET: ${{ secrets.EBAY_CLIENT_SECRET }}
+      
+      - name: Test Sold Endpoint
+        if: github.event.inputs.mode == 'test_sold_endpoint'
+        run: python test_sold_endpoint.py
         env:
           EBAY_CLIENT_ID: ${{ secrets.EBAY_CLIENT_ID }}
           EBAY_CLIENT_SECRET: ${{ secrets.EBAY_CLIENT_SECRET }}
