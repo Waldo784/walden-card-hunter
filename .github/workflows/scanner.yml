@@ -18,6 +18,8 @@ jobs:
 
       - run: pip install -r requirements.txt
 
+      - run: python auto_generate_watchlist.py
+
       - run: python scanner.py
         env:
           EBAY_CLIENT_ID: ${{ secrets.EBAY_CLIENT_ID }}
