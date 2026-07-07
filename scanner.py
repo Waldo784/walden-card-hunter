@@ -11,6 +11,7 @@ SEEN_FILE = "seen_items.json"
 
 RESULTS_PER_QUERY = 20
 MAX_ALERTS_PER_RUN = 15
+MIN_WALDEN_SCORE = 70
 
 EBAY_CLIENT_ID = os.environ["EBAY_CLIENT_ID"]
 EBAY_CLIENT_SECRET = os.environ["EBAY_CLIENT_SECRET"]
@@ -338,8 +339,11 @@ def main():
 
             new_seen.add(key)
 
-    hits = list(grouped_hits.values())
-    hits.sort(key=lambda h: h["walden_score"], reverse=True)
+    hits = [
+    hit for hit in grouped_hits.values()
+    if hit["walden_score"] >= MIN_WALDEN_SCORE
+]
+hits.sort(key=lambda h: h["walden_score"], reverse=True)
 
     if not hits:
         send_telegram("Walden Card Hunter ran — no matching deals found.")
