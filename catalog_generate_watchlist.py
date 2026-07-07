@@ -18,8 +18,10 @@ def load_catalog():
 def main():
     catalog = load_catalog()
     rows = []
+    seen_queries = set()
 
     for card in catalog:
+        card_key = safe_text(card.get("card_key"))
         year = safe_text(card.get("year"))
         brand = safe_text(card.get("brand"))
         insert_set = safe_text(card.get("insert_set"))
@@ -39,14 +41,23 @@ def main():
             base_queries.append(f"{player} {alias}")
 
         for query in base_queries:
+            query = " ".join(query.split())
+            if not query or query in seen_queries:
+                continue
+
             rows.append({
+                "card_key": card_key,
                 "query": query,
                 "max_price": 2500,
                 "priority": priority,
             })
+            seen_queries.add(query)
 
     with open(OUTPUT_FILE, "w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=["query", "max_price", "priority"])
+        writer = csv.DictWriter(
+            f,
+            fieldnames=["card_key", "query", "max_price", "priority"]
+        )
         writer.writeheader()
         writer.writerows(rows)
 
