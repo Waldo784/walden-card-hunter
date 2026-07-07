@@ -18,7 +18,7 @@ jobs:
 
       - run: pip install -r requirements.txt
 
-      - run: python auto_generate_watchlist.py
+      - run: python catalog_generate_watchlist.py
 
       - run: python scanner.py
         env:
